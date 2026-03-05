@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SaintGab Radio 🎙</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #111;
+    --surface2: #181818;
+    --border: #222;
+    --accent: #ff2d55;
+    --accent2: #ff9500;
+    --green: #30d158;
+    --text: #f0f0f0;
+    --muted: #555;
+    --dim: #333;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,45,85,0.12), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,149,0,0.07), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 60px 20px 40px;
+  }
+
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,45,85,0.12);
+    border: 1px solid rgba(255,45,85,0.3);
+    border-radius: 30px;
+    padding: 6px 16px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .station-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3.5rem, 12vw, 8rem);
+    letter-spacing: 0.05em;
+    line-height: 0.9;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .station-title span {
+    color: var(--accent);
+    -webkit-text-stroke: 1px var(--accent);
+  }
+
+  .station-desc {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* PLAYER CARD */
+  .player-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+  }
+
+  .player-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+
+  /* YouTube embed */
+  .yt-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    background: #000;
+    display: none;
+  }
+  .yt-container.active { display: block; }
+  .yt-container iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+
+  /* Offline screen */
+  .offline-screen {
+    padding: 40px 20px;
+    text-align: center;
+    background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+  }
+  .offline-icon {
+    font-size: 3.5rem;
+    margin-bottom: 14px;
+    display: block;
+  }
+  .offline-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .offline-sub {
+    font-size: 0.8rem;
+    color: var(--dim);
+  }
+
+  /* Controls bar */
+  .controls-bar {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .track-info { flex: 1; min-width: 0; }
+  .track-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .track-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .play-btn {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(255,45,85,0.4);
+  }
+  .play-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(255,45,85,0.5);
+  }
+
+  /* Visualizer bars */
+  .visualizer {
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  .vis-bar {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    min-height: 3px;
+    transition: height 0.1s;
+  }
+  .vis-bar:nth-child(even) { background: var(--accent2); }
+
+  /* Volume */
+  .vol-row {
+    padding: 0 24px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .vol-icon { font-size: 0.9rem; color: var(--muted); }
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--dim);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(255,255,255,0.2);
+  }
+
+  /* CONFIG SECTION */
+  .config-section {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  .config-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .config-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .config-header:hover { background: var(--surface2); }
+
+  .config-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .config-arrow { transition: transform 0.3s; color: var(--dim); }
+  .config-arrow.open { transform: rotate(180deg); }
+
+  .config-body {
+    padding: 20px 24px;
+    display: none;
+  }
+  .config-body.open { display: block; }
+
+  .cfg-field {
+    margin-bottom: 16px;
+  }
+  .cfg-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+    display: block;
+  }
+  .cfg-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .cfg-input:focus { border-color: var(--accent); }
+  .cfg-hint {
+    font-size: 0.72rem;
+    color: var(--dim);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+  .cfg-hint a { color: var(--accent); text-decoration: none; }
+
+  .cfg-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    margin-top: 4px;
+  }
+  .cfg-btn:hover {
+    background: #e0002f;
+    box-shadow: 0 4px 16px rgba(255,45,85,0.4);
+  }
+
+  /* GUIDE SECTION */
+  .guide-section {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  .guide-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding-left: 2px;
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--dim);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step.done .step-num { background: var(--green); color: #000; }
+
+  .step-content { flex: 1; }
+  .step-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+  .step-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .step-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 8px;
+    color: var(--accent2);
+    word-break: break-all;
+  }
+
+  /* Footer */
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.72rem;
+    color: var(--dim);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="live-pill">
+    <span class="live-dot"></span>
+    En direct
+  </div>
+  <h1 class="station-title">SAINT<span>GAB</span><br>RADIO</h1>
+  <p class="station-desc">Ta radio en ligne — diffusée en direct depuis OBS</p>
+</div>
+
+<!-- PLAYER -->
+<div class="player-wrap">
+  <div class="player-card">
+
+    <!-- YouTube embed (masqué si hors ligne) -->
+    <div class="yt-container" id="ytContainer">
+      <iframe id="ytFrame"
+        src=""
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+        allowfullscreen>
+      </iframe>
+    </div>
+
+    <!-- Écran hors ligne -->
+    <div class="offline-screen" id="offlineScreen">
+      <span class="offline-icon">📻</span>
+      <div class="offline-title">Hors antenne</div>
+      <div class="offline-sub">La radio reprend bientôt…</div>
+    </div>
+
+    <!-- Contrôles -->
+    <div class="controls-bar">
+      <div class="track-info">
+        <div class="track-name" id="trackName">SaintGab Radio</div>
+        <div class="track-sub" id="trackSub">EN DIRECT • OBS → YouTube</div>
+      </div>
+
+      <div class="visualizer" id="visualizer">
+        <div class="vis-bar" style="height:4px"></div>
+        <div class="vis-bar" style="height:4px"></div>
+        <div class="vis-bar" style="height:4px"></div>
+        <div class="vis-bar" style="height:4px"></div>
+        <div class="vis-bar" style="height:4px"></div>
+        <div class="vis-bar" style="height:4px"></div>
+      </div>
+
+      <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+    </div>
+
+    <!-- Volume -->
+    <div class="vol-row">
+      <span class="vol-icon">🔈</span>
+      <input type="range" min="0" max="100" value="80" oninput="setVolume(this.value)" id="volSlider">
+      <span class="vol-icon">🔊</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div class="config-section">
+  <div class="config-card">
+    <div class="config-header" onclick="toggleConfig()">
+      <span class="config-title">⚙️ Configurer ma radio</span>
+      <span class="config-arrow" id="configArrow">▼</span>
+    </div>
+    <div class="config-body" id="configBody">
+
+      <div class="cfg-field">
+        <label class="cfg-label">Nom de ta radio</label>
+        <input class="cfg-input" type="text" id="cfgName" placeholder="SaintGab Radio">
+      </div>
+
+      <div class="cfg-field">
+        <label class="cfg-label">ID de ta vidéo YouTube Live</label>
+        <input class="cfg-input" type="text" id="cfgYT" placeholder="ex: dQw4w9WgXcQ">
+        <div class="cfg-hint">
+          Dans YouTube Studio → Live → copie l'ID dans l'URL<br>
+          ex: youtube.com/watch?v=<strong style="color:var(--accent)">dQw4w9WgXcQ</strong>
+        </div>
+      </div>
+
+      <div class="cfg-field">
+        <label class="cfg-label">Description</label>
+        <input class="cfg-input" type="text" id="cfgDesc" placeholder="une radio scolaire">
+      </div>
+
+      <button class="cfg-btn" onclick="applyConfig()">✅ Appliquer</button>
+
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE OBS -->
+<div class="guide-section">
+  <div class="guide-title">GUIDE — OBS → YouTube Live</div>
+  <div class="steps">
+
+    <div class="step done">
+      <div class="step-num">✓</div>
+      <div class="step-content">
+        <div class="step-title">Tu as GitHub ✅</div>
+        <div class="step-desc">Upload ce fichier index.html dans un repo → Active GitHub Pages → ton site est en ligne sur <strong>tonnom.github.io/ma-radio</strong></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Crée un compte YouTube gratuit</div>
+        <div class="step-desc">Va sur youtube.com → connecte-toi avec Google → crée une chaîne en 1 minute</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Active YouTube Live</div>
+        <div class="step-desc">YouTube Studio → Créer → Diffuser en direct → Active le live (vérification 24h la 1ère fois)</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Configure OBS</div>
+        <div class="step-desc">OBS → Paramètres → Flux</div>
+        <div class="step-code">
+          Service : YouTube - RTMPS<br>
+          → Connecte ton compte Google<br>
+          → La clé est automatique ✅
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Lance ta radio</div>
+        <div class="step-desc">Dans OBS clique <strong>Démarrer le stream</strong> 🔴 → copie l'ID YouTube → colle-le dans la config ci-dessus</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Partage ton lien GitHub</div>
+        <div class="step-desc">Tout le monde écoute ta radio sur ton site GitHub Pages 🌍</div>
+        <div class="step-code">tonnom.github.io/ma-radio</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  SAINTGAB RADIO — PROPULSÉ PAR OBS + YOUTUBE LIVE + GITHUB PAGES — 100% GRATUIT
+</footer>
+
+<script>
+let isPlaying = false;
+let ytLoaded = false;
+let visInterval = null;
+
+// Load saved config
+function loadConfig() {
+  const name = localStorage.getItem('radioName') || 'SaintGab Radio';
+  const ytId = localStorage.getItem('ytId') || '';
+  const desc = localStorage.getItem('radioDesc') || 'EN DIRECT • OBS → YouTube';
+
+  document.getElementById('trackName').textContent = name;
+  document.getElementById('trackSub').textContent = desc.toUpperCase();
+  document.getElementById('cfgName').value = name;
+  document.getElementById('cfgYT').value = ytId;
+  document.getElementById('cfgDesc').value = desc;
+
+  if(ytId) loadYT(ytId);
+}
+
+function loadYT(id) {
+  const frame = document.getElementById('ytFrame');
+  frame.src = `https://www.youtube.com/embed/${id}?autoplay=0&rel=0&modestbranding=1`;
+  document.getElementById('ytContainer').classList.add('active');
+  document.getElementById('offlineScreen').style.display = 'none';
+  ytLoaded = true;
+}
+
+function applyConfig() {
+  const name = document.getElementById('cfgName').value || 'SaintGab Radio';
+  const ytId = document.getElementById('cfgYT').value.trim();
+  const desc = document.getElementById('cfgDesc').value || 'En direct';
+
+  localStorage.setItem('radioName', name);
+  localStorage.setItem('ytId', ytId);
+  localStorage.setItem('radioDesc', desc);
+
+  document.getElementById('trackName').textContent = name;
+  document.getElementById('trackSub').textContent = desc.toUpperCase();
+
+  if(ytId) {
+    loadYT(ytId);
+    document.title = name + ' 🎙';
+  }
+
+  document.getElementById('configBody').classList.remove('open');
+  document.getElementById('configArrow').classList.remove('open');
+}
+
+function toggleConfig() {
+  const body = document.getElementById('configBody');
+  const arrow = document.getElementById('configArrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('playBtn');
+  btn.textContent = isPlaying ? '⏸' : '▶';
+
+  if(isPlaying) {
+    startVisualizer();
+    // If YouTube loaded, tell iframe to play
+    const frame = document.getElementById('ytFrame');
+    if(ytLoaded && frame.src) {
+      const id = localStorage.getItem('ytId');
+      if(id) frame.src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+    }
+  } else {
+    stopVisualizer();
+  }
+}
+
+function setVolume(v) {
+  // Can't directly control iframe volume from JS (CORS)
+}
+
+// Fake visualizer animation
+function startVisualizer() {
+  const bars = document.querySelectorAll('.vis-bar');
+  visInterval = setInterval(() => {
+    bars.forEach(bar => {
+      const h = 3 + Math.random() * 22;
+      bar.style.height = h + 'px';
+    });
+  }, 100);
+}
+
+function stopVisualizer() {
+  clearInterval(visInterval);
+  document.querySelectorAll('.vis-bar').forEach(b => b.style.height = '3px');
+}
+
+// Init
+loadConfig();
+</script>
+</body>
+</html>
